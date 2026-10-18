@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Habit Duel</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF3F0;--ink:#14262B;--mute:#5B6E72;--card:#fff;--line:#D3DDD9;--a:#2B59C3;--ta:#E3EAFA;--b:#B87A00;--tb:#FBEFD0;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1A1D;--ink:#E8F0EE;--mute:#93A7AB;--card:#17262A;--line:#26393E;--a:#7C9CFF;--ta:#1E2A4D;--b:#F2B93B;--tb:#3A2F12}}
+:root[data-theme="dark"]{--bg:#0F1A1D;--ink:#E8F0EE;--mute:#93A7AB;--card:#17262A;--line:#26393E;--a:#7C9CFF;--ta:#1E2A4D;--b:#F2B93B;--tb:#3A2F12}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 "Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:clamp(2rem,6vw,3rem);font-weight:800;letter-spacing:-.02em;margin:0 0 4px;line-height:1.05}
+.sub{color:var(--mute);margin:0 0 20px}
+.nav{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.nav .date{font-weight:600;min-width:11ch;text-align:center}
+button,input{font:inherit;color:inherit}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer}
+.btn:hover{border-color:var(--mute)}
+:focus-visible{outline:3px solid var(--a);outline-offset:2px}
+.tug{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:20px}
+.tug .row{display:flex;justify-content:space-between;font-weight:600;margin-bottom:8px;gap:8px}
+.bar{display:flex;height:22px;border-radius:11px;overflow:hidden;background:var(--line)}
+.bar i{display:block;transition:width .4s ease}
+.bar .ba{background:var(--a)}.bar .bb{background:var(--b)}
+.verdict{margin:10px 0 0;color:var(--mute)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:560px){.cols{grid-template-columns:1fr}}
+.col{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.col.a{border-top:5px solid var(--a)}.col.b{border-top:5px solid var(--b)}
+.name{width:100%;font-weight:800;font-size:1.3rem;margin:0 0 6px}
+.today{font-size:2.2rem;font-weight:800;line-height:1;margin:6px 0 12px}
+.today small{font-size:1rem;font-weight:400;color:var(--mute)}
+.habit{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer}
+.habit .box{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--mute);display:grid;place-items:center;font-size:14px;line-height:1}
+.a .habit[aria-pressed="true"]{background:var(--ta);border-color:var(--a)}
+.a .habit[aria-pressed="true"] .box{background:var(--a);border-color:var(--a);color:var(--card)}
+.b .habit[aria-pressed="true"]{background:var(--tb);border-color:var(--b)}
+.b .habit[aria-pressed="true"] .box{background:var(--b);border-color:var(--b);color:var(--card)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:20px}
+.panel h2{font-size:1.1rem;margin:0 0 10px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:480px;text-align:center}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--mute);font-size:.9rem}
+td:first-child,th:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+.ca{color:var(--a);font-weight:800}.cb{color:var(--b);font-weight:800}
+.cur{background:var(--bg)}
+details summary{cursor:pointer;font-weight:600}
+.edit{display:flex;gap:8px;margin-top:8px}
+.edit input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px}
+.add{margin-top:10px}
+.wbox{margin:0 0 12px}.pct{font-size:1.5rem;font-weight:800;line-height:1.1;margin-bottom:6px}.cap{margin:10px 0 4px;color:var(--mute);font-size:.9rem}.chip.live{border-style:dotted}.mute{color:var(--mute)}
+ol{padding-left:1.2em}li{margin-bottom:6px}code{background:var(--bg);padding:1px 5px;border-radius:5px;word-break:break-all}
+.banner{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0 0 14px;font-weight:600}
+.chips{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:16px}
+@media (max-width:560px){.chips{grid-template-columns:repeat(6,1fr)}}
+.chip{display:flex;flex-direction:column;align-items:center;padding:6px 0;background:var(--card);border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:.8rem;line-height:1.25;min-height:3.8em}
+.chip.wa{background:var(--ta);border-color:var(--a)}
+.chip.wb{background:var(--tb);border-color:var(--b)}
+.chip.wt{border-style:dashed}
+.chip.now{box-shadow:0 0 0 2px var(--ink)}
+.chip.sel b{text-decoration:underline}
+.chip small{font-size:.7rem;color:var(--mute)}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.bdg{font-size:.85rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.habit:disabled{opacity:.55;cursor:not-allowed}
+.edit label{display:flex;gap:8px;align-items:center}
+.edit input[type=number]{flex:none;width:4.5rem}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const KEY='habit-duel-v1';
+const defaults=[
+  {id:'hab1',name:'Drink 100 oz of water'},
+  {id:'hab2',name:'30 minutes of exercise / PT'},
+  {id:'hab3',name:'Eat 2 servings of veggies/Fast'},
+  {id:'hab6',name:'No sugar'},
+  {id:'hab7',name:'No carbohydrates'},
+  {id:'hab8',name:'Take vitamins'},
+  {id:'hab9',name:'Daily quiet time'},
+  {id:'hab10',name:'No eating past 7 pm'},
+  {id:'hab11',name:'Made a good choice'}
+];
+let S=null;
+
+S={names:['Mom','Dad'],habits:defaults,log:{},wt:{a:[],b:[]},start:'2026-10-18',goal:6};
+const P=['a','b'];
+let editing=false;
+const iso=d=>{const z=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)};
+const parse=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d)};
+const diffDays=(a,b)=>Math.round((parse(b)-parse(a))/864e5);
+const END=addDays(S.start,83);
+const clampDay=x=>x<S.start?S.start:x>END?END:x;
+let day=clampDay(iso(new Date()));
+const todayIso=()=>iso(new Date());
+const RO=false;
+const LSK='habit-duel-api';
+let DBURL='',loaded=false,busyUntil=0,syncMsg='',dirty=false,sig='',chain=Promise.resolve();
+let K='';
+try{const h=new URLSearchParams(location.hash.slice(1));if(h.get('api')){DBURL=h.get('api');K=h.get('k')||'';localStorage.setItem(LSK,JSON.stringify([DBURL,K]))}else{const v=JSON.parse(localStorage.getItem(LSK)||'null');if(v){DBURL=v[0];K=v[1]}}}catch(e){}
+const base=()=>DBURL.trim().replace(/\/+$/,'');
+const chk=r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r};
+const getAll=()=>fetch(base()+'/api/state?k='+encodeURIComponent(K),{cache:'no-store'}).then(chk).then(r=>r.json());
+const arr=v=>Array.isArray(v)?v.filter(x=>x!=null):Object.values(v||{});
+let pending={},flushing=false;
+const pcount=()=>Object.keys(pending).length;
+function put(id,path,body){pending[id]={path,body};flush()}
+async function flush(){
+  if(flushing)return;flushing=true;
+  while(pcount()){
+    const snap=Object.assign({},pending);
+    try{
+      for(const k of Object.keys(snap)){
+        await fetch(base()+snap[k].path+'?k='+encodeURIComponent(K),{method:'POST',body:JSON.stringify(snap[k].body)}).then(chk);
+        if(pending[k]===snap[k])delete pending[k];
+      }
+      syncMsg='';busyUntil=Date.now()+1500;
+    }catch(e){
+      syncMsg='Your last change has not saved yet ('+(e&&e.message?e.message:'network error')+'). Retrying automatically. Keep this page open.';
+      refresh();
+      await new Promise(r=>setTimeout(r,4000));
+    }
+  }
+  flushing=false;refresh();setTimeout(pull,1600);
+}
+function save(){}
+function saveLog(day0,p){put('l'+day0+p,'/api/log',{date:day0,p,ids:((S.log[day0]&&S.log[day0][p])||[]).slice()})}
+function saveWeight(day0,p,w){put('w'+day0+p,'/api/weight',{date:day0,p,weight:w})}
+function refresh(){const a=document.activeElement;if(a&&a.tagName==='INPUT'&&document.getElementById('app').contains(a)){dirty=true;return}dirty=false;render()}
+async function pull(){
+  if(!DBURL||pcount()||flushing||Date.now()<busyUntil)return;
+  try{
+    const d=await getAll();
+    if(pcount()||flushing||Date.now()<busyUntil)return;
+    const c=d&&d.config;
+    const l={};
+    Object.values((d&&d.log)||{}).forEach(x=>{if(!x||!x.date||!x.p)return;(l[x.date]=l[x.date]||{a:[],b:[]})[x.p]=arr(x.ids)});
+    S.log=l;
+    S.wt=d&&d.weight?{a:arr(d.weight.a),b:arr(d.weight.b)}:{a:[],b:[]};
+    const s=JSON.stringify([l,S.wt]);
+    const was=loaded||syncMsg;
+    loaded=true;syncMsg='';
+    if(s!==sig||!was){sig=s;refresh()}
+  }catch(e){syncMsg='Can\u2019t reach the scoreboard right now. Retrying\u2026';refresh()}
+}
+function inviteLink(){return location.href.split('#')[0]+'#api='+encodeURIComponent(base())+'&k='+encodeURIComponent(K)}
+function renderSetup(){
+  document.getElementById('app').innerHTML=`
+    <h1>Habit Duel</h1>
+    <p class="sub">One-time setup. Whoever sets this up then sends an invite link to the other person, who needs no setup at all.</p>
+    <div class="panel"><h2>Connect the scoreboard</h2>
+      <p class="verdict">Paste the address of your Cloudflare Worker and the secret key you chose.</p>
+      <div class="edit"><input id="dburl" placeholder="https://habit-duel.your-name.workers.dev" aria-label="Worker address"></div>
+      <div class="edit"><input id="dbkey" placeholder="Secret key" aria-label="Secret key"><button class="btn" data-setup="1">Connect</button></div>
+      <p class="verdict" id="seterr" role="status"></p>
+    </div>`;
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function ids(){return new Set(S.habits.map(h=>h.id))}
+function done(p,date){const e=S.log[date];return e&&e[p]?e[p]:[]}
+function score(p,date){const v=ids();return done(p,date).filter(i=>v.has(i)).length}
+function weekIdx(date){return Math.min(11,Math.max(0,Math.floor(diffDays(S.start,date)/7)))}
+function weekDates(w){return[...Array(7)].map((_,i)=>addDays(S.start,w*7+i))}
+const sum=(p,list)=>list.reduce((s,k)=>s+score(p,k),0);
+const goalN=()=>Math.max(1,Math.min(S.goal,S.habits.length||1));
+function weekFinal(w){return weekDates(w)[6]<todayIso()}
+function weekWin(w){const d=weekDates(w),a=sum('a',d),b=sum('b',d);return a>b?0:b>a?1:-1}
+function wins(){const r=[0,0];for(let w=0;w<12;w++)if(weekFinal(w)){const x=weekWin(w);if(x>=0)r[x]++}return r}
+const fp=x=>x==null?'No weigh-in yet':x>=0?x.toFixed(1)+'% lost':Math.abs(x).toFixed(1)+'% gained';
+function pctAt(p,date){let r=null;for(const e of (S.wt&&S.wt[p])||[])if(e.d<=date)r=e;return r?r.pct:null}
+function wLead(k){const t=todayIso(),ds=weekDates(k);if(ds[0]>t)return-2;const e=ds[6]<t?ds[6]:t,a=pctAt('a',e),b=pctAt('b',e);if(a==null||b==null)return-2;return a>b?0:b>a?1:-1}
+function streak(p){
+  const t=todayIso(),n=S.habits.length,ok=d=>n>0&&score(p,d)>=goalN();
+  const last=t>END?END:t;let run=0,best=0,cur=0;
+  for(let d=S.start;d<=last;d=addDays(d,1)){if(ok(d)){run++;best=Math.max(best,run)}else run=0}
+  let e=last;if(e===t&&!ok(e))e=addDays(e,-1);
+  for(let d=e;d>=S.start&&ok(d);d=addDays(d,-1))cur++;
+  return[cur,best];
+}
+function perfect(p){const n=S.habits.length,t=todayIso();let c=0;if(!n)return 0;for(let i=0;i<84;i++){const d=addDays(S.start,i);if(d<=t&&score(p,d)===n)c++}return c}
+function label(date){
+  const t=todayIso();
+  if(date===t)return'Today';
+  const y=new Date();y.setDate(y.getDate()-1);
+  if(date===iso(y))return'Yesterday';
+  return parse(date).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+}
+function render(){
+  if(!DBURL){renderSetup();return}
+  if(!loaded){document.getElementById('app').innerHTML=`<h1>Habit Duel</h1><p class="sub" role="status">${syncMsg||'Loading the scoreboard\u2026'}</p>${syncMsg?'<button class="btn" data-disconnect="1">Change connection</button>':''}`;return}
+  const wi=weekIdx(day),wk=weekDates(wi);
+  const w=P.map(p=>sum(p,wk));
+  const all=P.map(p=>sum(p,Object.keys(S.log).filter(k=>k>=S.start&&k<=END)));
+  const tot=w[0]+w[1];
+  const pa=tot?w[0]/tot*100:50;
+  const diff=w[0]-w[1];
+  const fin=weekFinal(wi),nm=i=>esc(S.names[i]),pts=Math.abs(diff)+' point'+(Math.abs(diff)===1?'':'s');
+  const verdict=tot===0?'No points yet this week. Check off a habit to get started.':diff===0?(fin?`Week ${wi+1} ended in a tie.`:'Tied this week.'):fin?`${nm(diff>0?0:1)} won Week ${wi+1} by ${pts}.`:`${nm(diff>0?0:1)} leads by ${pts} this week.`;
+  const n=S.habits.length;
+  const t=todayIso(),canLog=day>=S.start&&day<=END&&day<=t&&!RO;
+  const W=wins(),ST=P.map(streak),PF=P.map(perfect);
+  const cw=weekIdx(clampDay(t));
+  const chips=[...Array(12)].map((_,k)=>{
+    const x=weekFinal(k)?weekWin(k):-2;
+    const cls=(x>=0?'w'+P[x]:x===-1?'wt':'')+(k===wi?' sel':'')+(k===cw&&t>=S.start&&t<=END?' now':'');
+    return `<button class="chip ${cls}" data-wk="${k}" aria-label="Week ${k+1}${x>=0?', won by '+esc(S.names[x]):x===-1?', tied':''}"><b>W${k+1}</b><span>${x>=0?'&#127942;':x===-1?'&#129309;':'&nbsp;'}</span><small>${x>=0?esc(S.names[x].slice(0,3)):'&nbsp;'}</small></button>`;
+  }).join('');
+  const curD=t>END?END:t,pc=P.map(p=>pctAt(p,curD));
+  const wch=pc[0]==null||pc[1]==null?-1:pc[0]>pc[1]?0:pc[1]>pc[0]?1:-1;
+  const wv=pc[0]==null&&pc[1]==null?'No weigh-ins yet. Enter your starting weight on the first day.':pc[0]==null||pc[1]==null?`Waiting for ${nm(pc[0]==null?0:1)}'s first weigh-in.`:wch<0?'Tied on weight loss so far.':`${nm(wch)} leads by ${Math.abs(pc[0]-pc[1]).toFixed(1)} percentage points.`;
+  const wchips=[...Array(12)].map((_,k)=>{const x=wLead(k),f=weekFinal(k);const cls=(x>=0?'w'+P[x]:x===-1?'wt':'')+(f?'':' live')+(k===wi?' sel':'');return `<button class="chip ${cls}" data-wk="${k}" aria-label="Week ${k+1} weight${x>=0?', '+esc(S.names[x])+(f?' won':' leads'):x===-1?', tied':', no result yet'}"><b>W${k+1}</b><span>${x>=0?'&#9878;':x===-1?'&#129309;':'&nbsp;'}</span><small>${x>=0?esc(S.names[x].slice(0,3)):'&nbsp;'}</small></button>`}).join('');
+  const dleft=diffDays(t,S.start);
+  const champ=W[0]>W[1]?0:W[1]>W[0]?1:all[0]>all[1]?0:all[1]>all[0]?1:-1;
+  const banner=t<S.start?`<p class="banner">The contest starts ${dleft===1?'tomorrow':'in '+dleft+' days'}, ${parse(S.start).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}. Twelve weeks; most weeks won takes the title.</p>`:t>END?`<p class="banner">&#127942; Habits champion: ${champ<0?'dead heat':nm(champ)} (weeks won ${W[0]} to ${W[1]}). &#9878; Weight-loss champion: ${wch<0?'dead heat':nm(wch)} (${fp(pc[0])}, ${fp(pc[1])}).</p>`:`<p class="banner">Week ${cw+1} of 12. Weeks won: ${nm(0)} ${W[0]}, ${nm(1)} ${W[1]}.</p>`;
+  const cols=P.map((p,i)=>`
+    <section class="col ${p}" aria-label="${esc(S.names[i])}">
+      <h2 class="name">${esc(S.names[i])}</h2>
+      <div class="today">${score(p,day)}<small> / ${n} habits</small></div>
+      <div class="wbox"><div class="pct">${fp(pc[i])}</div><div class="edit"><input type="number" inputmode="decimal" step="0.1" min="30" id="w_${p}" placeholder="Weigh-in, same units each time" aria-label="${esc(S.names[i])} weight" ${canLog?'':'disabled'}><button class="btn" data-w="${p}" ${canLog?'':'disabled'}>Save</button></div><small class="mute">Everyone sees only the percentage. Weigh-ins save for the day shown above.</small></div>
+      <div class="badges"><span class="bdg">&#127942; ${W[i]} week${W[i]===1?'':'s'} won</span><span class="bdg">&#128293; ${ST[i][0]}-day streak</span><span class="bdg">Best streak ${ST[i][1]}</span><span class="bdg">&#11088; ${PF[i]} perfect day${PF[i]===1?'':'s'}</span></div>
+      ${S.habits.map(h=>`<button class="habit" ${canLog?'':'disabled'} data-p="${p}" data-h="${h.id}" aria-pressed="${done(p,day).includes(h.id)}"><span class="box">${done(p,day).includes(h.id)?'&#10003;':''}</span>${esc(h.name)}</button>`).join('')}
+    </section>`).join('');
+  const head=wk.map(d=>`<th class="${d===day?'cur':''}">${parse(d).toLocaleDateString(undefined,{weekday:'short'})}</th>`).join('');
+  const rows=P.map((p,i)=>`<tr><td class="c${p}">${esc(S.names[i])}</td>${wk.map(d=>`<td class="${d===day?'cur':''}">${score(p,d)}</td>`).join('')}<td class="c${p}">${w[i]}</td></tr>`).join('');
+  document.getElementById('app').innerHTML=`
+    <h1>Habit Duel</h1>
+    ${syncMsg?`<p class="banner" role="alert">${esc(syncMsg)}</p>`:''}
+    <p class="sub">One point per healthy habit. Two titles: most habit weeks won, and biggest percentage of weight lost.</p>
+    <div class="nav">
+      <button class="btn" data-go="-1" aria-label="Previous day" ${day<=S.start?'disabled':''}>&lsaquo;</button>
+      <span class="date">${label(day)}</span>
+      <button class="btn" data-go="1" aria-label="Next day" ${day>=END?'disabled':''}>&rsaquo;</button>
+      ${day!==clampDay(t)?'<button class="btn" data-go="today">Back to today</button>':''}
+    </div>
+    ${banner}
+    <p class="cap">Habit winner each week</p><div class="chips">${chips}</div>
+    <p class="cap">Weight-loss leader each week (dotted means still in progress)</p><div class="chips">${wchips}</div>
+    <div class="tug">
+      <div class="row"><span class="ca">${esc(S.names[0])}: ${w[0]}</span><span>Week ${wi+1} of 12</span><span class="cb">${esc(S.names[1])}: ${w[1]}</span></div>
+      <div class="bar" role="img" aria-label="Weekly points split"><i class="ba" style="width:${pa}%"></i><i class="bb" style="width:${100-pa}%"></i></div>
+      <p class="verdict">${verdict}</p>
+    </div>
+    <div class="tug"><div class="row"><span class="ca">${nm(0)}: ${fp(pc[0])}</span><span>Weight lost so far</span><span class="cb">${nm(1)}: ${fp(pc[1])}</span></div><p class="verdict">${wv}</p></div>
+    <div class="cols">${cols}</div>
+    <div class="panel"><h2>Week ${wi+1}, day by day</h2>
+      <div class="scroll"><table><thead><tr><th></th>${head}<th>Total</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="verdict">All-time points: <span class="ca">${esc(S.names[0])} ${all[0]}</span> &nbsp;|&nbsp; <span class="cb">${esc(S.names[1])} ${all[1]}</span></p>
+    </div>
+    <p class="sub">A streak day means at least ${goalN()} of ${n} habits done.</p>
+    <p class="sub" role="status">${syncMsg||'Live scoreboard. Changes show up on both phones within a few seconds.'}</p>
+    <div class="panel"><h2>Invite your competitor</h2><p class="verdict">Send them this link. It opens the scoreboard with no setup.</p>
+      <div class="edit"><input id="invite" readonly value="${esc(inviteLink())}" aria-label="Invite link"><button class="btn" data-copy="1">Copy link</button></div>
+      <p class="verdict" id="copied" role="status"></p></div>`;
+}
+const app=document.getElementById('app');
+app.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.h){
+    const e2=S.log[day]=S.log[day]||{a:[],b:[]};
+    const list=e2[t.dataset.p]=e2[t.dataset.p]||[];
+    const k=list.indexOf(t.dataset.h);
+    k>=0?list.splice(k,1):list.push(t.dataset.h);
+    saveLog(day,t.dataset.p);render();
+  }else if(t.dataset.go){
+    if(t.dataset.go==='today')day=clampDay(todayIso());
+    else day=clampDay(addDays(day,Number(t.dataset.go)));
+    render();
+  }else if(t.dataset.wk){
+    day=clampDay(addDays(S.start,Number(t.dataset.wk)*7));render();
+  }else if(t.dataset.del){
+    S.habits=S.habits.filter(h=>h.id!==t.dataset.del);save();render();
+  }else if(t.dataset.add){addHabit()}
+});
+function addHabit(){
+  const v=document.getElementById('newh').value.trim();
+  if(!v)return;
+  S.habits.push({id:'h'+Date.now().toString(36),name:v});
+  editing=true;save();render();
+}
+app.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='newh')addHabit()});
+app.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.name!==undefined){S.names[t.dataset.name]=t.value.trim()||('Player '+(Number(t.dataset.name)+1));save();render()}
+  else if(t.dataset.goal){S.goal=Math.max(1,Math.min(Number(t.value)||1,S.habits.length||1));save();render()}
+  else if(t.dataset.rename){const h=S.habits.find(x=>x.id===t.dataset.rename);if(h&&t.value.trim()){h.name=t.value.trim();save();setTimeout(refresh,800)}}
+});
+app.addEventListener('focusout',()=>setTimeout(()=>{if(dirty)refresh()},400));
+app.addEventListener('click',async e=>{
+  const t=e.target.closest('button');if(!t)return;
+  if(t.dataset.setup){
+    const msg=x=>{document.getElementById('seterr').textContent=x};
+    const v=document.getElementById('dburl').value.trim();K=document.getElementById('dbkey').value.trim();
+    if(!/^https:\/\/[^\s]+$/.test(v)||!K){msg('Enter the https:// address of your Worker and your secret key.');return}
+    DBURL=v.replace(/\/+$/,'');msg('Connecting\u2026');
+    try{await getAll();try{localStorage.setItem(LSK,JSON.stringify([DBURL,K]))}catch(x){}loaded=false;pull()}
+    catch(x){DBURL='';msg('Could not connect. Check the address and secret key.')}
+  }else if(t.dataset.w){
+    const p=t.dataset.w,el=document.getElementById('w_'+p),v=parseFloat(el.value);
+    if(!(v>=30&&v<=1000)){el.value='';el.placeholder='Enter your weight as a number';return}
+    saveWeight(day,p,v);el.value='';el.placeholder='Saved. Updating\u2026';
+  }else if(t.dataset.copy){
+    const i=document.getElementById('invite'),m=document.getElementById('copied');
+    i.select();
+    try{await navigator.clipboard.writeText(i.value);m.textContent='Link copied.'}catch(x){m.textContent='Press and hold the link above to copy it.'}
+  }else if(t.dataset.disconnect){
+    try{localStorage.removeItem(LSK)}catch(x){}
+    DBURL='';syncMsg='';render();
+  }
+});
+render();
+if(DBURL)pull();
+setInterval(pull,5000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
+</script>
+</body>
+</html>
