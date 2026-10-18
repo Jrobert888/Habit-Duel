@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Habit Duel</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Habit Duel">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#EEF3F0;--ink:#14262B;--mute:#5B6E72;--card:#fff;--line:#D3DDD9;--a:#2B59C3;--ta:#E3EAFA;--b:#B87A00;--tb:#FBEFD0;
@@ -55,6 +58,16 @@ details summary{cursor:pointer;font-weight:600}
 .edit{display:flex;gap:8px;margin-top:8px}
 .edit input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px}
 .add{margin-top:10px}
+.habit.wh{display:block;cursor:default}.whead{display:flex;align-items:center;gap:10px}
+.oz{display:flex;gap:6px;margin-top:8px}.oz button{flex:1;min-width:0;padding:8px 0;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-weight:600;font-size:.8rem}
+.oz button:disabled{opacity:.55;cursor:not-allowed}
+.a .habit[data-on="true"]{background:var(--ta);border-color:var(--a)}
+.a .habit[data-on="true"] .box{background:var(--a);border-color:var(--a);color:var(--card)}
+.b .habit[data-on="true"]{background:var(--tb);border-color:var(--b)}
+.b .habit[data-on="true"] .box{background:var(--b);border-color:var(--b);color:var(--card)}
+.a .oz button[aria-pressed="true"]{background:var(--a);border-color:var(--a);color:var(--card)}
+.b .oz button[aria-pressed="true"]{background:var(--b);border-color:var(--b);color:var(--card)}
+.edit select{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;color:inherit;font:inherit}
 .wbox{margin:0 0 12px}.pct{font-size:1.5rem;font-weight:800;line-height:1.1;margin-bottom:6px}.cap{margin:10px 0 4px;color:var(--mute);font-size:.9rem}.chip.live{border-style:dotted}.mute{color:var(--mute)}
 ol{padding-left:1.2em}li{margin-bottom:6px}code{background:var(--bg);padding:1px 5px;border-radius:5px;word-break:break-all}
 .banner{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0 0 14px;font-weight:600}
@@ -104,6 +117,7 @@ let day=clampDay(iso(new Date()));
 const todayIso=()=>iso(new Date());
 const RO=false;
 const LSK='habit-duel-api';
+let WHO='',pushOn=false,pushMsg='';try{WHO=localStorage.getItem('habit-duel-who')||''}catch(e){}
 let DBURL='',loaded=false,busyUntil=0,syncMsg='',dirty=false,sig='',chain=Promise.resolve();
 let K='';
 try{const h=new URLSearchParams(location.hash.slice(1));if(h.get('api')){DBURL=h.get('api');K=h.get('k')||'';localStorage.setItem(LSK,JSON.stringify([DBURL,K]))}else{const v=JSON.parse(localStorage.getItem(LSK)||'null');if(v){DBURL=v[0];K=v[1]}}}catch(e){}
@@ -152,13 +166,44 @@ async function pull(){
     if(s!==sig||!was){sig=s;refresh()}
   }catch(e){syncMsg='Can\u2019t reach the scoreboard right now. Retrying\u2026';refresh()}
 }
+const u8=b=>{const p='='.repeat((4-b.length%4)%4),r=atob((b+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(r,c=>c.charCodeAt(0))};
+function pushPanel(){
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent),standalone=navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+  let info;
+  if(ios&&!standalone)info='On an iPhone, reminders only work from the Home Screen app. Tap the Share button, choose Add to Home Screen, open Habit Duel from your Home Screen (you may need to paste your invite link when it opens), then come back to this section.';
+  else if(!('PushManager' in window)||!('serviceWorker' in navigator))info='This browser cannot receive reminders. On an iPhone you need iOS 16.4 or newer and the Home Screen app.';
+  else info='Reminders use Pacific time and are only sent when they apply: quiet time at 7 am; water at 10 am, 2 pm and 5 pm if you are behind pace (20 oz by 10 am, 60 oz by 2 pm, 80 oz by 5 pm); a no-eating-after-7 heads up at 6:30 pm; vitamins at 8:30 pm; a wind-down reminder at 9:30 pm so you can get 7 hours of sleep; a weigh-in reminder on Saturday mornings; and a friendly nudge at 5:30 pm if the other person is well ahead.';
+  return `<div class="panel"><h2>Reminders on this phone</h2><p class="verdict">${info}</p><div class="edit"><select id="who" aria-label="Who uses this phone"><option value="">Who uses this phone?</option><option value="a" ${WHO==='a'?'selected':''}>${esc(S.names[0])}</option><option value="b" ${WHO==='b'?'selected':''}>${esc(S.names[1])}</option></select></div><div class="edit"><button class="btn" data-push="on">${pushOn?'Reminders are on':'Turn on reminders'}</button><button class="btn" data-push="test">Send a test</button></div><p class="verdict" role="status">${esc(pushMsg)}</p></div>`;
+}
+async function enablePush(){
+  try{
+    if(!WHO)return'Choose who uses this phone first.';
+    if(!('serviceWorker' in navigator)||!('PushManager' in window))return'This browser cannot receive reminders.';
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted')return'Notifications were not allowed. You can change this in Settings, Notifications, Habit Duel.';
+    const reg=await navigator.serviceWorker.register('sw.js?api='+encodeURIComponent(base())+'&k='+encodeURIComponent(K));
+    await navigator.serviceWorker.ready;
+    const key=(await fetch(base()+'/api/vapid?k='+encodeURIComponent(K)).then(chk).then(r=>r.json())).key;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(key)});
+    await fetch(base()+'/api/subscribe?k='+encodeURIComponent(K),{method:'POST',body:JSON.stringify({p:WHO,sub:sub.toJSON()})}).then(chk);
+    pushOn=true;return'Reminders are on for this phone. Tap "Send a test" to check.';
+  }catch(e){return'Could not turn on reminders ('+(e&&e.message||'error')+').'}
+}
+async function testPush(){
+  try{
+    const reg=await navigator.serviceWorker.getRegistration(),sub=reg&&await reg.pushManager.getSubscription();
+    if(!sub)return'Turn on reminders first.';
+    const r=await fetch(base()+'/api/test?k='+encodeURIComponent(K),{method:'POST',body:JSON.stringify({endpoint:sub.endpoint})}).then(chk).then(r=>r.json());
+    return'Test sent (status '+r.status+'). It should arrive in a few seconds.';
+  }catch(e){return'Could not send a test ('+(e&&e.message||'error')+').'}
+}
 function inviteLink(){return location.href.split('#')[0]+'#api='+encodeURIComponent(base())+'&k='+encodeURIComponent(K)}
 function renderSetup(){
   document.getElementById('app').innerHTML=`
     <h1>Habit Duel</h1>
     <p class="sub">One-time setup. Whoever sets this up then sends an invite link to the other person, who needs no setup at all.</p>
     <div class="panel"><h2>Connect the scoreboard</h2>
-      <p class="verdict">Paste the address of your Cloudflare Worker and the secret key you chose.</p>
+      <p class="verdict">Paste your invite link into the first box (leave the key blank), or paste your Cloudflare Worker address and secret key.</p>
       <div class="edit"><input id="dburl" placeholder="https://habit-duel.your-name.workers.dev" aria-label="Worker address"></div>
       <div class="edit"><input id="dbkey" placeholder="Secret key" aria-label="Secret key"><button class="btn" data-setup="1">Connect</button></div>
       <p class="verdict" id="seterr" role="status"></p>
@@ -227,7 +272,9 @@ function render(){
       <div class="today">${score(p,day)}<small> / ${n} habits</small></div>
       <div class="wbox"><div class="pct">${fp(pc[i])}</div><div class="edit"><input type="number" inputmode="decimal" step="0.1" min="30" id="w_${p}" placeholder="Weigh-in, same units each time" aria-label="${esc(S.names[i])} weight" ${canLog?'':'disabled'}><button class="btn" data-w="${p}" ${canLog?'':'disabled'}>Save</button></div><small class="mute">Everyone sees only the percentage. Weigh-ins save for the day shown above.</small></div>
       <div class="badges"><span class="bdg">&#127942; ${W[i]} week${W[i]===1?'':'s'} won</span><span class="bdg">&#128293; ${ST[i][0]}-day streak</span><span class="bdg">Best streak ${ST[i][1]}</span><span class="bdg">&#11088; ${PF[i]} perfect day${PF[i]===1?'':'s'}</span></div>
-      ${S.habits.map(h=>`<button class="habit" ${canLog?'':'disabled'} data-p="${p}" data-h="${h.id}" aria-pressed="${done(p,day).includes(h.id)}"><span class="box">${done(p,day).includes(h.id)?'&#10003;':''}</span>${esc(h.name)}</button>`).join('')}
+      ${S.habits.map(h=>{const d=done(p,day),on=d.includes(h.id);
+        if(h.id==='hab1')return `<div class="habit wh" data-on="${on}"><div class="whead"><span class="box">${on?'&#10003;':''}</span>${esc(h.name)}</div><div class="oz">${[1,2,3,4,5].map(n=>`<button ${canLog?'':'disabled'} data-p="${p}" data-oz="${n}" aria-pressed="${d.includes('w'+n)}" aria-label="20 ounces, box ${n} of 5">20 oz</button>`).join('')}</div></div>`;
+        return `<button class="habit" ${canLog?'':'disabled'} data-p="${p}" data-h="${h.id}" aria-pressed="${on}"><span class="box">${on?'&#10003;':''}</span>${esc(h.name)}</button>`}).join('')}
     </section>`).join('');
   const head=wk.map(d=>`<th class="${d===day?'cur':''}">${parse(d).toLocaleDateString(undefined,{weekday:'short'})}</th>`).join('');
   const rows=P.map((p,i)=>`<tr><td class="c${p}">${esc(S.names[i])}</td>${wk.map(d=>`<td class="${d===day?'cur':''}">${score(p,d)}</td>`).join('')}<td class="c${p}">${w[i]}</td></tr>`).join('');
@@ -257,6 +304,7 @@ function render(){
     </div>
     <p class="sub">A streak day means at least ${goalN()} of ${n} habits done.</p>
     <p class="sub" role="status">${syncMsg||'Live scoreboard. Changes show up on both phones within a few seconds.'}</p>
+    ${pushPanel()}
     <div class="panel"><h2>Invite your competitor</h2><p class="verdict">Send them this link. It opens the scoreboard with no setup.</p>
       <div class="edit"><input id="invite" readonly value="${esc(inviteLink())}" aria-label="Invite link"><button class="btn" data-copy="1">Copy link</button></div>
       <p class="verdict" id="copied" role="status"></p></div>`;
@@ -269,6 +317,15 @@ app.addEventListener('click',e=>{
     const list=e2[t.dataset.p]=e2[t.dataset.p]||[];
     const k=list.indexOf(t.dataset.h);
     k>=0?list.splice(k,1):list.push(t.dataset.h);
+    saveLog(day,t.dataset.p);render();
+  }else if(t.dataset.oz){
+    const e2=S.log[day]=S.log[day]||{a:[],b:[]};
+    const list=e2[t.dataset.p]=e2[t.dataset.p]||[];
+    const id='w'+t.dataset.oz,k=list.indexOf(id);
+    k>=0?list.splice(k,1):list.push(id);
+    const full=[1,2,3,4,5].every(n=>list.includes('w'+n)),hi=list.indexOf('hab1');
+    if(full&&hi<0)list.push('hab1');
+    if(!full&&hi>=0)list.splice(hi,1);
     saveLog(day,t.dataset.p);render();
   }else if(t.dataset.go){
     if(t.dataset.go==='today')day=clampDay(todayIso());
@@ -293,12 +350,14 @@ app.addEventListener('change',e=>{
   else if(t.dataset.goal){S.goal=Math.max(1,Math.min(Number(t.value)||1,S.habits.length||1));save();render()}
   else if(t.dataset.rename){const h=S.habits.find(x=>x.id===t.dataset.rename);if(h&&t.value.trim()){h.name=t.value.trim();save();setTimeout(refresh,800)}}
 });
+app.addEventListener('change',e=>{if(e.target.id==='who'){WHO=e.target.value;try{localStorage.setItem('habit-duel-who',WHO)}catch(x){}}});
 app.addEventListener('focusout',()=>setTimeout(()=>{if(dirty)refresh()},400));
 app.addEventListener('click',async e=>{
   const t=e.target.closest('button');if(!t)return;
   if(t.dataset.setup){
     const msg=x=>{document.getElementById('seterr').textContent=x};
-    const v=document.getElementById('dburl').value.trim();K=document.getElementById('dbkey').value.trim();
+    let v=document.getElementById('dburl').value.trim();K=document.getElementById('dbkey').value.trim();
+    if(v.includes('#api=')){const h=new URLSearchParams(v.split('#')[1]);v=h.get('api')||'';K=h.get('k')||K}
     if(!/^https:\/\/[^\s]+$/.test(v)||!K){msg('Enter the https:// address of your Worker and your secret key.');return}
     DBURL=v.replace(/\/+$/,'');msg('Connecting\u2026');
     try{await getAll();try{localStorage.setItem(LSK,JSON.stringify([DBURL,K]))}catch(x){}loaded=false;pull()}
@@ -307,6 +366,8 @@ app.addEventListener('click',async e=>{
     const p=t.dataset.w,el=document.getElementById('w_'+p),v=parseFloat(el.value);
     if(!(v>=30&&v<=1000)){el.value='';el.placeholder='Enter your weight as a number';return}
     saveWeight(day,p,v);el.value='';el.placeholder='Saved. Updating\u2026';
+  }else if(t.dataset.push){
+    pushMsg=t.dataset.push==='on'?await enablePush():await testPush();refresh();
   }else if(t.dataset.copy){
     const i=document.getElementById('invite'),m=document.getElementById('copied');
     i.select();
@@ -318,6 +379,7 @@ app.addEventListener('click',async e=>{
 });
 render();
 if(DBURL)pull();
+if('serviceWorker' in navigator)navigator.serviceWorker.getRegistration().then(r=>r&&r.pushManager.getSubscription()).then(x=>{if(x){pushOn=true;refresh()}}).catch(()=>{});
 setInterval(pull,5000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
 </script>
